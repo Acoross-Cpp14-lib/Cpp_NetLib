@@ -5,6 +5,7 @@
 
 #include <utility>
 #include <functional>
+#include <memory>
 
 #include "winapi.h"
 #include "io_service.hpp"
@@ -16,12 +17,20 @@ namespace tcp{
 	class socket : public io_device_base
 	{
 	public:
+		enum class state : char
+		{
+			not_registered_iocp,
+			initialized,
+		};
+
+	public:
+		NO_COPY(socket);
+
 		socket(acoross::asio::io_service& ios)
 			: _io_service(ios), _winsock(INVALID_SOCKET)
 				, io_device_base()
 		{
 			memset(&_addr, 0, sizeof(_addr));
-			memset(&_recvOverlapped, 0, sizeof(_recvOverlapped));
 		}
 
 		socket(acoross::asio::io_service& ios,
@@ -30,9 +39,7 @@ namespace tcp{
 			)
 			: _io_service(ios), _addr(addr), _winsock(winsock)
 				, io_device_base()
-		{
-			memset(&_recvOverlapped, 0, sizeof(_recvOverlapped));
-			_io_service.Register(*this, (ULONG_PTR)this);
+		{	
 		}
 
 		~socket()
@@ -40,16 +47,11 @@ namespace tcp{
 			closesocket(_winsock);
 		}
 
-		socket& operator=(socket&& rhs)
+		void Set(acoross::winapi::SOCKET winsock,
+			acoross::winapi::sockaddr_in addr)
 		{
-			_io_service = rhs._io_service;
-			_winsock = rhs._winsock;
-			_addr = rhs._addr;
-
-			rhs._winsock = INVALID_SOCKET;
-			rhs._addr = sockaddr_in();
-
-			return (*this);
+			_winsock = winsock;
+			_addr = addr;
 		}
 
 	public:
@@ -59,12 +61,12 @@ namespace tcp{
 		}
 
 		template<size_t N>
-		err_code Recv(char(&buffer)[N], DWORD& dwNumOfByteReceived)
+		err_code Recv(char(&buffer)[N], DWORD& dwNumOfByteReceived) const
 		{
 			return Recv(buffer, N, dwNumOfByteReceived);
 		}
 
-		err_code Recv(char* buffer, size_t N, DWORD& dwNumOfByteReceived)
+		err_code Recv(char* buffer, size_t N, DWORD& dwNumOfByteReceived) const
 		{
 			WSABUF wsabuf;
 			wsabuf.buf = buffer;
@@ -81,26 +83,41 @@ namespace tcp{
 			//TODO: error 贸府 碍拳
 			return err_code::no_error;
 		}
-
-		typedef std::function<void(acoross::asio::err_code, DWORD dwNumOfByteReceived)> RecvCallbackF;
 		
 		template<size_t N>
-		err_code AsyncRecv(char(&buffer)[N], RecvCallbackF recvCallback)
+		err_code AsyncRecv(char(&buffer)[N], io_callback_t recvCallback) const
 		{
+			if (_state == state::not_registered_iocp)
+			{
+				return err_code::error;
+			}
+
 			WSABUF wsabuf;
 			wsabuf.buf = buffer;
 			wsabuf.len = N;
 
 			DWORD flag = 0;
 
-			if (SOCKET_ERROR == WSARecv(_winsock, &wsabuf, 1, nullptr, &flag, &_recvOverlapped, NULL) && 
-				GetLastError() == WSA_IO_PENDING)
+			auto* pMsg = new io_message(std::move(recvCallback));
+			if (SOCKET_ERROR == WSARecv(_winsock, &wsabuf, 1, nullptr, &flag, pMsg, NULL))
 			{
-				return err_code::no_error;
+				int wsaerr = WSAGetLastError();
+				if (wsaerr == WSA_IO_PENDING)
+				{
+					return err_code::no_error;
+				}
 			}
 
 			//TODO: error 贸府 碍拳
 			return err_code::error;
+		}
+
+		void Register2IOCP() const
+		{
+			if (_io_service.Register((HANDLE)_winsock, (ULONG_PTR)this))
+			{
+				_state = state::initialized;
+			}
 		}
 
 	private:
@@ -109,8 +126,11 @@ namespace tcp{
 		acoross::winapi::sockaddr_in	_addr;
 
 		acoross::winapi::OVERLAPPED		_recvOverlapped;
+
+		mutable state _state{ state::not_registered_iocp };
 	};
 
+	typedef std::shared_ptr<socket> SocketSP;
 }}}
 
 #endif /_ACOROSS_ASIO_TCP_SOCKET_H_

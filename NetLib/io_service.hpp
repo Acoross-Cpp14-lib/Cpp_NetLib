@@ -5,7 +5,11 @@
 
 #include <array>
 #include <iostream>
+#include <functional>
+#include <utility>
+
 #include "winapi.h"
+#include "Util.h"
 
 namespace acoross{
 namespace asio{
@@ -14,6 +18,31 @@ enum class err_code
 {
 	no_error,
 	error
+};
+
+typedef std::function<void(err_code err, DWORD dwTransferred)> io_callback_t;
+
+struct io_message_base : public acoross::winapi::OVERLAPPED
+{
+	io_message_base()
+	{
+		this->hEvent = 0;
+		this->Internal = 0;
+		this->InternalHigh = 0;
+		this->Offset = 0;
+		this->OffsetHigh = 0;
+		this->Pointer = 0;
+	}
+};
+
+struct io_message : public io_message_base
+{
+	io_message(io_callback_t func)
+		: callback(std::move(func)), io_message_base()
+	{	
+	}
+
+	io_callback_t callback;
 };
 
 static DWORD __stdcall IOThread(LPVOID arg)
@@ -36,9 +65,20 @@ static DWORD __stdcall IOThread(LPVOID arg)
 		if (GetQueuedCompletionStatus(hIOCP, &dwTransferred, (PULONG_PTR)&compKey, &pOverlapped, INFINITE))
 		{
 			std::cout << "got char!" << std::endl;
+			if (pOverlapped)
+			{
+				((io_message*)pOverlapped)->callback(err_code::no_error, dwTransferred);
+				delete pOverlapped;
+			}
 		}
 		else
 		{
+			if (pOverlapped)
+			{
+				((io_message*)pOverlapped)->callback(err_code::error, dwTransferred);
+				delete pOverlapped;
+			}
+
 			int err = GetLastError();
 			std::cerr << "error: " << err << std::endl;
 		}
@@ -55,33 +95,45 @@ struct io_device_base
 class io_service
 {
 public:
+	NO_COPY(io_service);
+
 	io_service()
 	{
 		hIOCP = CreateIoCompletionPort(INVALID_HANDLE_VALUE, NULL, NULL, 0);
 	}
 
-	// windows dependent code
-	bool Register(io_device_base& device, ULONG_PTR completion_key)
+	~io_service()
 	{
-		if (device.GetHandle() == INVALID_HANDLE_VALUE)
-			return false;
+		for (auto& hThread : hThreadarr)
+		{
+			// TODO: clear threads
+		}
+	}
+
+public:
+	// windows dependent code
+	bool Register(HANDLE hDevice, const ULONG_PTR completion_key)
+	{
 		if (hIOCP == NULL)
 			return false;
 
-		HANDLE ret = CreateIoCompletionPort(device.GetHandle(), hIOCP, completion_key, 0);
+		if (hDevice == INVALID_HANDLE_VALUE)
+			return false;
+		
+		HANDLE ret = CreateIoCompletionPort(hDevice, hIOCP, completion_key, 0);
 		if (ret == hIOCP)
 		{
 			return true;
 		}
 
-		//GetLastError();
+		//int err = GetLastError();
 		return false;
 	}
 
-	bool run()
+	err_code run()
 	{
 		if (hIOCP == NULL)
-			return false;
+			return err_code::error;
 
 		// run event processing loop
 		int id = 0;
@@ -90,10 +142,7 @@ public:
 			hThread = CreateThread(NULL, 0, IOThread, &hIOCP, CREATE_SUSPENDED, (LPDWORD)&id);
 			if (hThread == NULL)
 			{
-				//Log.Add(L"CreateThread[%d] is failed: %d\n", id, GetLastError());
-				return false;
-
-				// throw exception
+				return err_code::error;
 			}
 
 			++id;
@@ -104,11 +153,11 @@ public:
 			if (-1 == ResumeThread(hThread))
 			{
 				//throw exception
-				return false;
+				return err_code::error;
 			}
 		}
 
-		return true;
+		return err_code::no_error;
 	}
 
 private:
@@ -116,9 +165,6 @@ private:
 	std::array<HANDLE, 8> hThreadarr{ NULL, };
 };
 
-
-
 }}
-
 
 #endif //_ACOROSS_ASIO_IO_SERVICE_H_

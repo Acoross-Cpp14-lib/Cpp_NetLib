@@ -4,6 +4,7 @@
 #pragma once
 
 #include <utility>
+#include <memory>
 
 #include "winapi.h"
 #include "io_service.hpp"
@@ -16,10 +17,12 @@ namespace asio {
 	{
 	public:
 		acceptor(acoross::asio::io_service& ios, int port)
-			: m_io_service(ios), m_port(port), m_bInitialized(false), io_device_base()
+			: m_io_service(ios), m_port(port), m_bInitialized(false)
 		{
-			m_bInitialized = listenStart();
-			m_io_service.Register(*this, (ULONG_PTR)this);
+			if (m_bInitialized = listenStart())
+			{
+				m_io_service.Register((HANDLE)m_listenSock, (ULONG_PTR)this);
+			}
 		}
 
 		~acceptor()
@@ -37,10 +40,17 @@ namespace asio {
 			return (HANDLE)m_listenSock;
 		}
 
-		err_code Accept(tcp::socket& socket)
+		err_code Accept(tcp::SocketSP pSocket)
 		{
 			if (!m_bInitialized)
+			{	
 				return err_code::error;
+			}
+
+			if (!pSocket)
+			{
+				return err_code::error;
+			}
 
 			SOCKET hClientSocket = INVALID_SOCKET;
 			sockaddr_in cliaddr;
@@ -50,9 +60,9 @@ namespace asio {
 			{
 				return err_code::error;
 			}
-
-			socket = std::move(
-				tcp::socket(m_io_service, hClientSocket, cliaddr));
+			
+			pSocket->Set(hClientSocket, cliaddr);
+			pSocket->Register2IOCP();
 
 			return err_code::no_error;
 		}
@@ -93,7 +103,7 @@ namespace asio {
 		}
 
 	private:
-		bool m_bInitialized;
+		bool m_bInitialized{ false };
 
 		winapi::SOCKET m_listenSock;
 		int m_port;

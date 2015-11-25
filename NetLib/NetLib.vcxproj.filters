@@ -16,6 +16,9 @@
     <Filter Include="asio">
       <UniqueIdentifier>{5de626f4-1f15-4dba-861d-1438af255c34}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Util">
+      <UniqueIdentifier>{11938ca8-b6ff-4441-863d-e036a7c9daae}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -37,6 +40,9 @@
     </ClInclude>
     <ClInclude Include="acceptor.h">
       <Filter>asio</Filter>
+    </ClInclude>
+    <ClInclude Include="Util.h">
+      <Filter>Util</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>
