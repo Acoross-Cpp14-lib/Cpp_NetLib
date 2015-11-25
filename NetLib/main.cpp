@@ -31,6 +31,8 @@ int main(int argc, char* argv[])
 	Network::Init();
 
 	asio::io_service iosvc;
+	iosvc.run();
+	
 	asio::acceptor acceptor(iosvc, 7777);
 	
 	while (true)
@@ -40,15 +42,20 @@ int main(int argc, char* argv[])
 		if (err == asio::err_code::no_error)
 		{
 			char buffer[1000]{ 0, };
-			err = socket.Recv(buffer);
+			DWORD dwNumOfByteReceived = 0;
+
+			socket.AsyncRecv(buffer, [](acoross::asio::err_code, DWORD dwTransferred)
+			{
+				//TODO;
+			});
+
+			/*err = socket.Recv(buffer, dwNumOfByteReceived);
 			if (err == asio::err_code::no_error)
 			{
 				printf_s("buffer: %s\n", buffer);
-			}
+			}*/
 		}
 	}
-
-	iosvc.run();
 
 	Network::Cleanup();
 }

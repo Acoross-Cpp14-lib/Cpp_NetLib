@@ -11,6 +11,7 @@ namespace acoross {
 	namespace winapi {
 		typedef ::SOCKET SOCKET;
 		typedef ::sockaddr_in	sockaddr_in;
+		typedef ::OVERLAPPED OVERLAPPED;
 	}
 }
 

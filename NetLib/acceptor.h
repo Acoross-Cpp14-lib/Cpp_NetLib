@@ -12,13 +12,14 @@
 namespace acoross {
 namespace asio {
 
-	class acceptor
+	class acceptor : public io_device_base
 	{
 	public:
 		acceptor(acoross::asio::io_service& ios, int port)
-			: m_io_service(ios), m_port(port), m_bInitialized(false)
+			: m_io_service(ios), m_port(port), m_bInitialized(false), io_device_base()
 		{
 			m_bInitialized = listenStart();
+			m_io_service.Register(*this, (ULONG_PTR)this);
 		}
 
 		~acceptor()
@@ -29,6 +30,11 @@ namespace asio {
 		void AsyncAccept()
 		{
 			//TODO
+		}
+
+		virtual HANDLE GetHandle() const override
+		{
+			return (HANDLE)m_listenSock;
 		}
 
 		err_code Accept(tcp::socket& socket)

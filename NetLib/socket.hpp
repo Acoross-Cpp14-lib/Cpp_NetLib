@@ -4,6 +4,7 @@
 #pragma once
 
 #include <utility>
+#include <functional>
 
 #include "winapi.h"
 #include "io_service.hpp"
@@ -12,21 +13,26 @@ namespace acoross {
 namespace asio {
 namespace tcp{
 
-	class socket
+	class socket : public io_device_base
 	{
 	public:
 		socket(acoross::asio::io_service& ios)
 			: _io_service(ios), _winsock(INVALID_SOCKET)
+				, io_device_base()
 		{
 			memset(&_addr, 0, sizeof(_addr));
+			memset(&_recvOverlapped, 0, sizeof(_recvOverlapped));
 		}
 
 		socket(acoross::asio::io_service& ios,
 			acoross::winapi::SOCKET winsock,
 			acoross::winapi::sockaddr_in addr
 			)
-			: _io_service(ios), _winsock(winsock), _addr(addr)
+			: _io_service(ios), _addr(addr), _winsock(winsock)
+				, io_device_base()
 		{
+			memset(&_recvOverlapped, 0, sizeof(_recvOverlapped));
+			_io_service.Register(*this, (ULONG_PTR)this);
 		}
 
 		~socket()
@@ -47,19 +53,24 @@ namespace tcp{
 		}
 
 	public:
-		template<size_t N>
-		err_code Recv(char(&buffer)[N])
+		virtual HANDLE GetHandle() const override
 		{
-			return Recv(buffer, N);
+			return (HANDLE)_winsock;
 		}
 
-		err_code Recv(char* buffer, size_t N)
+		template<size_t N>
+		err_code Recv(char(&buffer)[N], DWORD& dwNumOfByteReceived)
+		{
+			return Recv(buffer, N, dwNumOfByteReceived);
+		}
+
+		err_code Recv(char* buffer, size_t N, DWORD& dwNumOfByteReceived)
 		{
 			WSABUF wsabuf;
 			wsabuf.buf = buffer;
-			wsabuf.len = N;
+			wsabuf.len = static_cast<ULONG>(N);
 
-			DWORD dwNumOfByteReceived = 0;
+			//DWORD dwNumOfByteReceived = 0;
 			DWORD flag = 0;
 
 			if (SOCKET_ERROR == WSARecv(_winsock, &wsabuf, 1, &dwNumOfByteReceived, &flag, NULL /*lpoverlapped*/, NULL))
@@ -71,10 +82,33 @@ namespace tcp{
 			return err_code::no_error;
 		}
 
+		typedef std::function<void(acoross::asio::err_code, DWORD dwNumOfByteReceived)> RecvCallbackF;
+		
+		template<size_t N>
+		err_code AsyncRecv(char(&buffer)[N], RecvCallbackF recvCallback)
+		{
+			WSABUF wsabuf;
+			wsabuf.buf = buffer;
+			wsabuf.len = N;
+
+			DWORD flag = 0;
+
+			if (SOCKET_ERROR == WSARecv(_winsock, &wsabuf, 1, nullptr, &flag, &_recvOverlapped, NULL) && 
+				GetLastError() == WSA_IO_PENDING)
+			{
+				return err_code::no_error;
+			}
+
+			//TODO: error 처리 강화
+			return err_code::error;
+		}
+
 	private:
 		acoross::asio::io_service&		_io_service;
 		acoross::winapi::SOCKET			_winsock;
 		acoross::winapi::sockaddr_in	_addr;
+
+		acoross::winapi::OVERLAPPED		_recvOverlapped;
 	};
 
 }}}
