@@ -68,7 +68,9 @@
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
-  <PropertyGroup />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);.\;</IncludePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -117,15 +119,22 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="acoross\asio\detail\win_iocp_io_service.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="acceptor.h" />
-    <ClInclude Include="io_service.hpp" />
-    <ClInclude Include="socket.hpp" />
-    <ClInclude Include="stdafx.h" />
-    <ClInclude Include="Util.h" />
-    <ClInclude Include="winapi.h" />
+    <Text Include="spec.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="acoross\asio\acceptor.hpp" />
+    <ClInclude Include="acoross\asio\detail\win_iocp_io_service.hpp" />
+    <ClInclude Include="acoross\asio\detail\win_iocp_operation.hpp" />
+    <ClInclude Include="acoross\asio\detail\win_iocp_socket_service.h" />
+    <ClInclude Include="acoross\asio\io_service.hpp" />
+    <ClInclude Include="acoross\asio\socket.hpp" />
+    <ClInclude Include="acoross\system.hpp" />
+    <ClInclude Include="acoross\util\Util.h" />
+    <ClInclude Include="asio\basic_io_object.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -19,30 +19,51 @@
     <Filter Include="Util">
       <UniqueIdentifier>{11938ca8-b6ff-4441-863d-e036a7c9daae}</UniqueIdentifier>
     </Filter>
+    <Filter Include="asio\detail">
+      <UniqueIdentifier>{440f7074-2ca1-4d52-bee6-7e736dcbb534}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system">
+      <UniqueIdentifier>{8bd52414-0dfc-46e4-aec0-0fd7932b192f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="acoross\asio\detail\win_iocp_io_service.cpp">
+      <Filter>asio\detail</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="stdafx.h">
-      <Filter>헤더 파일</Filter>
+    <Text Include="spec.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="acoross\asio\detail\win_iocp_io_service.hpp">
+      <Filter>asio\detail</Filter>
     </ClInclude>
-    <ClInclude Include="io_service.hpp">
+    <ClInclude Include="acoross\asio\detail\win_iocp_operation.hpp">
+      <Filter>asio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="acoross\asio\detail\win_iocp_socket_service.h">
+      <Filter>asio\detail</Filter>
+    </ClInclude>
+    <ClInclude Include="acoross\asio\acceptor.hpp">
       <Filter>asio</Filter>
     </ClInclude>
-    <ClInclude Include="socket.hpp">
+    <ClInclude Include="acoross\asio\io_service.hpp">
       <Filter>asio</Filter>
     </ClInclude>
-    <ClInclude Include="winapi.h">
-      <Filter>헤더 파일</Filter>
-    </ClInclude>
-    <ClInclude Include="acceptor.h">
+    <ClInclude Include="acoross\asio\socket.hpp">
       <Filter>asio</Filter>
     </ClInclude>
-    <ClInclude Include="Util.h">
+    <ClInclude Include="acoross\util\Util.h">
       <Filter>Util</Filter>
+    </ClInclude>
+    <ClInclude Include="acoross\system.hpp">
+      <Filter>헤더 파일</Filter>
+    </ClInclude>
+    <ClInclude Include="asio\basic_io_object.hpp">
+      <Filter>asio</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

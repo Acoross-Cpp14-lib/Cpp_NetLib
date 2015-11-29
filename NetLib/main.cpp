@@ -1,8 +1,6 @@
-//#include "stdafx.h"
-
-#include "io_service.hpp"
-#include "socket.hpp"
-#include "acceptor.h"
+#include <acoross\asio\io_service.hpp>
+#include <acoross\asio\socket.hpp>
+#include <acoross\asio\acceptor.hpp>
 
 namespace network
 {
@@ -29,33 +27,11 @@ int main(int argc, char* argv[])
 	using namespace acoross;
 
 	network::Init();
-
-	asio::io_service iosvc;
-	iosvc.run();
 	
-	asio::acceptor acceptor(iosvc, 7777);
-	auto pSocket = std::make_shared<asio::tcp::socket>(iosvc);	
-
-	while (true)
-	{	
-		asio::err_code err = acceptor.Accept(pSocket);
-		if (err == asio::err_code::no_error)
-		{
-			char buffer[1000]{ 0, };
-			DWORD dwNumOfByteReceived = 0;
-
-			pSocket->AsyncRecv(buffer, [](acoross::asio::err_code, DWORD dwTransferred)
-			{
-				printf("asyncrecv\n");
-			});
-
-			/*err = socket.Recv(buffer, dwNumOfByteReceived);
-			if (err == asio::err_code::no_error)
-			{
-				printf_s("buffer: %s\n", buffer);
-			}*/
-		}
-	}
+	acoross::asio::tcp_acceptor acceptor(7777);
+	
+	acoross::asio::socket soc;
+	acceptor.accept(soc);
 
 	network::Cleanup();
 }

@@ -1,0 +1,33 @@
+//requirements
+* msvc_14.0 (c++14)
+* std
+* windows
+* winsock2
+
+
+namespace 정책
+across
+	asio	// async io
+		detail	// imple
+
+구현 정책
+	window dependent 한 코드는 impl 로 숨긴다...?
+	가급적 모은다.
+	window specific class 를 만들어 기능을 위임한다.
+		-> 해당 클래스는 이름을 win_ 으로 만든다.
+	windows header 는 win_ 클래스에서만 include 한다.
+	windows 관련 hpp/cpp 는 /windows/ 폴더에 위치시킨다.
+
+코딩컨벤션
+	if (..) // 제어문 띄고, 괄호. 괄호 안에는 공백 없이.
+	a, b	// 스페이스 다음은 띄어쓰기
+	네임스페이스 다음줄은 들여쓰기 없음
+	파일은 관련 기능별로 폴더 + 필터로 관리.
+		필터는 폴더와 반드시 같은 구조를 가져야 함.
+	인클루드는 상대경로("..")로 하지말고 라이브러리 루트에 대한 절대경로로 해라. (<..>)
+	헤더에 ifndef 가드 반드시 사용하기.
+		가드 이름규칙: _파일경로_파일명_
+	os specific / hardware specific 함수는 별도 경로로(./detail, ./windows 등) 뺀다.
+		관련 기능은 인터페이스와 구현을 나눈다.
+		pimpl 이 적당하다.
+		
